@@ -6,7 +6,7 @@ import string
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
-from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 import nltk
@@ -19,14 +19,14 @@ nltk.download('wordnet')
 # -------------------------------
 # Title
 # -------------------------------
-st.title("Sentiment Analysis App")
+st.title("Sentiment Analysis using SVM")
 
 st.write("Upload dataset and predict sentiment from review text")
 
 # -------------------------------
-# File Upload 
+# File Upload
 # -------------------------------
-uploaded_file = st.file_uploader("P652-Dataset.xlsx", type=["xlsx"])
+uploaded_file = st.file_uploader("Upload Dataset (xlsx)", type=["xlsx"])
 
 if uploaded_file:
 
@@ -35,8 +35,8 @@ if uploaded_file:
     st.subheader("Dataset Preview")
     st.write(df.head())
 
-    # Drop missing values
-    df = df.dropna(subset=['body', 'rating'])
+    # Remove missing values
+    df = df.dropna(subset=['body','rating'])
 
     # -------------------------------
     # Sentiment Mapping
@@ -52,7 +52,7 @@ if uploaded_file:
     df["sentiment"] = df["rating"].apply(get_sentiment)
 
     # -------------------------------
-    # Text Cleaning
+    # Text Preprocessing
     # -------------------------------
     stop_words = set(stopwords.words("english"))
     lemmatizer = WordNetLemmatizer()
@@ -65,7 +65,7 @@ if uploaded_file:
         text = text.translate(str.maketrans("", "", string.punctuation))
 
         words = text.split()
-        words = [lemmatizer.lemmatize(w) for w in words if w not in stop_words]
+        words = [lemmatizer.lemmatize(word) for word in words if word not in stop_words]
 
         return " ".join(words)
 
@@ -75,7 +75,7 @@ if uploaded_file:
     st.write(df[["body","clean_text","sentiment"]].head())
 
     # -------------------------------
-    # Feature Extraction
+    # TF-IDF Feature Extraction
     # -------------------------------
     tfidf = TfidfVectorizer(max_features=5000)
 
@@ -90,27 +90,34 @@ if uploaded_file:
     )
 
     # -------------------------------
-    # Model Training
+    # SVM Model
     # -------------------------------
-    model = LinearSVC()
+    model = SVC(kernel='linear')
+
     model.fit(X_train,y_train)
 
     y_pred = model.predict(X_test)
 
-    acc = accuracy_score(y_test,y_pred)
+    # -------------------------------
+    # Model Evaluation
+    # -------------------------------
+    accuracy = accuracy_score(y_test,y_pred)
 
     st.subheader("Model Accuracy")
-    st.write(acc)
+    st.write(accuracy)
+
+    st.subheader("Confusion Matrix")
+    st.write(confusion_matrix(y_test,y_pred))
 
     st.subheader("Classification Report")
     st.text(classification_report(y_test,y_pred))
 
     # -------------------------------
-    # User Input Prediction
+    # User Prediction
     # -------------------------------
     st.subheader("Test Your Own Review")
 
-    user_input = st.text_area("Enter Review Text")
+    user_input = st.text_area("Enter Review")
 
     if st.button("Predict Sentiment"):
 
